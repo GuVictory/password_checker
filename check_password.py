@@ -1,5 +1,6 @@
 import requests
 import hashlib
+import sys
 
 
 def request_api_data(query_chars):
@@ -13,7 +14,9 @@ def request_api_data(query_chars):
 def get_password_leaks_count(hashes, hash_to_check):
     hashes = (line.split(':') for line in hashes.text.splitlines())
     for h, count in hashes:
-        print(h, count)
+        if h == hash_to_check:
+            return count
+    return 0
 
 
 def pwned_api_check(password):
@@ -21,10 +24,23 @@ def pwned_api_check(password):
 
     # hashing our password
     sha1password = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+
+    # we need the first 5 characters from the received hash, to work with API
     first5_chars, tail = sha1password[:5], sha1password[5:]
 
     responce = request_api_data(first5_chars)
     return get_password_leaks_count(responce, tail)
 
 
-pwned_api_check('vivi')
+def main(passwords):
+    for password in passwords:
+        result = pwned_api_check(password)
+        if result != 0:
+            print(
+                f'{password} was found {result} times... You should change your password!')
+        else:
+            print(f'{password} was NOT found! You can use it!)')
+    return 0
+
+
+main(sys.argv[1:])
